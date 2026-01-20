@@ -3,8 +3,7 @@
 #include <string.h>
 
 int main(int argc, char *argv[]) {
-
-  while (1) {
+  while(1){
     // Flush after every printf
     setbuf(stdout, NULL);
     printf("$ ");
@@ -16,9 +15,16 @@ int main(int argc, char *argv[]) {
     // Remove the trailing newline
     command[strcspn(command, "\n")] = '\0';
 
-    // Prints the "<command>: command not found" message
-    printf("%s: command not found\n", command);
+    if (strcmp(command, "exit") == 0){
+      return 0;
+    }
+    else{
+      // Prints the "<command>: command not found" message
+      printf("%s: command not found\n", command);
+    }
+
   }
+ 
 
   return 0;
 }
