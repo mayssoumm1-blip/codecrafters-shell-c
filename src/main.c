@@ -18,6 +18,11 @@ int main(int argc, char *argv[]) {
     if (strcmp(command, "exit") == 0){
       return 0;
     }
+    // Check if input starts with "echo "
+    else if (strncmp(command, "echo ", 5) == 0) {
+      // Print everything starting from index 5 (after "echo ")
+      printf("%s\n", command + 5);
+    }
     else{
       // Prints the "<command>: command not found" message
       printf("%s: command not found\n", command);
