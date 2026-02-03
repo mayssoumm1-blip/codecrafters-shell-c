@@ -53,7 +53,14 @@ int main() {
     // --CD BUILTIN--
     else if(strcmp(args[0], "cd") == 0){
       if (i<2) continue;
-      if (chdir(args[1]) != 0){
+      char *path = args[1];
+
+      if (strcmp(path, "~") == 0){
+        path = getenv("HOME");
+        if (path = NULL) continue;
+      }
+
+      if (chdir(path) != 0){
         printf("cd: %s: No such file or directory\n", args[1]);
       }
     }
@@ -64,8 +71,9 @@ int main() {
       // Check if it's a builtin                                   
       if (strcmp(args[1], "exit") == 0 || 
           strcmp(args[1], "echo") == 0 ||
-          strcmp(args[1], "type") == 0||
-          strcmp(args[1], "pwd") == 0) {                          
+          strcmp(args[1], "type") == 0 ||
+          strcmp(args[1], "pwd") == 0 ||
+          strcmp(args[1], "cd") == 0) {                          
         printf("%s is a shell builtin\n", args[1]);                
       } else {                                                     
         // Check if it's an external command 
