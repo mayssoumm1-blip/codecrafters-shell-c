@@ -3,85 +3,83 @@
 #include <string.h>
 #include <unistd.h>
 
-int check_path(const char *command_name);
+// Helper to find the full path of a command
+char* get_command_path(const char *command_name);
 
-int main(int argc, char *argv[]) {
-  // Flush after every printf
+
+int main() {
   setbuf(stdout, NULL);
-  char command[1024];
-  while(1){
+  char input[1024];
+
+  while (1) {
     printf("$ ");
+    if (fgets(input, sizeof(input), stdin) == NULL) break;
+    input[strcspn(input, "\n")] = '\0';
 
-    // Handle Input & EOF (Ctrl+D)
-    if (fgets(command, sizeof(command), stdin) == NULL){printf("\n"); break;} 
-
-    // Remove trailing newline
-    command[strcspn(command, "\n")] = '\0';
-
-    // EXIT
-    if (strcmp(command, "exit") == 0 || strcmp(command, "exit 0") == 0){
-      return 0;
+    // Tokenize input into arguments
+    char *args[128];
+    int i = 0;
+    char *token = strtok(input, " ");
+    while (token != NULL) {
+      args[i++] = token;
+      token = strtok(NULL, " ");
     }
+    args[i] = NULL; // Array must be NULL-terminated for execv
 
-    // ECHO
-    else if (strncmp(command, "echo ", 5) == 0) {
-      printf("%s\n", command + 5);
-    }
+    if (args[0] == NULL) continue; // Handle empty input
 
-    //--- TYPE COMMAND UPDATED ---
-    else if (strncmp(command, "type ", 5) == 0){
-      char *arg = command + 5;
-
-      // 1. Check Builtins
-      if (strncmp(arg ,"echo", 4)==0 ||strncmp(arg ,"type", 4)==0 ||strncmp(arg ,"exit", 4)==0){
-        printf("%s is a shell builtin\n", arg);
-      }
-      // 2. Check PATH
-      else {
-        if (!check_path(arg)) {
-          printf("%s: not found\n", arg);
+    // 2. Handle Builtins
+    if (strcmp(args[0], "exit") == 0) return 0;
+        
+    else if (strcmp(args[0], "echo") == 0) {
+      for (int j = 1; j < i; j++) printf("%s%s", args[j], (j == i - 1) ? "" : " ");
+      printf("\n");
+    } 
+        
+    // 3. Handle External Programs
+    else {
+      char *full_path = get_command_path(args[0]);
+      if (full_path) {
+        pid_t pid = fork(); // Create child process
+        if (pid == 0) {
+          // This is the CHILD process
+          execv(full_path, args);
+          // If execv returns, it failed
+          perror("execv");
+          exit(1);
+        } 
+        else {
+          // This is the PARENT (your shell)
+          wait(NULL); // Wait for the child to finish
+          free(full_path);
         }
+      } 
+      else {
+        printf("%s: command not found\n", args[0]);
       }
-    }
-
-
-    // COMMAND NOT FOUND
-    else{
-      printf("%s: command not found\n", command);
     }
   }
   return 0;
 }
 
-int check_path(const char *command_name) {
+char* get_command_path(const char *command_name){
   char *path_env = getenv("PATH");
-  if (path_env == NULL) return 0;
+  if(!path_env) return NULL;
 
-  // Duplicate the PATH string because strtok modifies it
   char *path_copy = strdup(path_env);
-  
-  // Split the path by ':'
-  char *directory = strtok(path_copy, ":");
+  char *dir = strtok(path_copy, ":");
 
-  while (directory != NULL) {
-    // Allocate enough space for "directory/command" + null terminator
-    // (strlen(directory) + 1 slash + strlen(command_name) + 1 null)
-    char full_path[1024]; 
-      
-    // Construct the full path: directory + "/" + command_name
-    snprintf(full_path, sizeof(full_path), "%s/%s", directory, command_name);
+  while (dir != NULL){
+    char *full_path = malloc(srtlen(dir) + strlen(command_name) + 2);
+    sprintf(full_path, "%s/%s", dir, command_name );
 
-    // check if file exists and is executable
-    if (access(full_path, X_OK) == 0) {
-      printf("%s is %s\n", command_name, full_path);
-      free(path_copy); 
-      return 1;
+    if (access(full_path, X_OK)==0){
+      free(path_copy);
+      return full_path;
     }
-
-    // Move to the next directory in PATH
-    directory = strtok(NULL, ":");
+    free(full_path);
+    dir = strtok(NULL, ":");
   }
-
   free(path_copy);
-  return 0;
+  return NULL;
 }
