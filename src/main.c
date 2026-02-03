@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 // Helper to find the full path of a command
@@ -30,6 +31,23 @@ int main() {
 
     // 2. Handle Builtins
     if (strcmp(args[0], "exit") == 0) return 0;
+
+    else if (strcmp(args[0], "type") == 0) {                       
+      if (i < 2) continue;                                                  
+      // Check if it's a builtin                                   
+      if (strcmp(args[1], "exit") == 0 || strcmp(args[1], "echo") == 0 ||strcmp(args[1], "type") == 0) {                          
+        printf("%s is a shell builtin\n", args[1]);                
+      } else {                                                     
+        // Check if it's an external command 
+        char *full_path = get_command_path(args[1]); 
+        if (full_path) {                                           
+          printf("%s is %s\n", args[1], full_path);                
+          free(full_path);                                         
+        } else {                                                   
+          printf("%s: not found\n", args[1]);                      
+        }                                                          
+      }                                                            
+    }    
         
     else if (strcmp(args[0], "echo") == 0) {
       for (int j = 1; j < i; j++) printf("%s%s", args[j], (j == i - 1) ? "" : " ");
@@ -70,7 +88,7 @@ char* get_command_path(const char *command_name){
   char *dir = strtok(path_copy, ":");
 
   while (dir != NULL){
-    char *full_path = malloc(srtlen(dir) + strlen(command_name) + 2);
+    char *full_path = malloc(strlen(dir) + strlen(command_name) + 2);
     sprintf(full_path, "%s/%s", dir, command_name );
 
     if (access(full_path, X_OK)==0){
