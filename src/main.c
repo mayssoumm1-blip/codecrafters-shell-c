@@ -57,7 +57,6 @@ int main() {
 
       if (strcmp(path, "~") == 0){
         path = getenv("HOME");
-        if (path = NULL) continue;
       }
 
       if (chdir(path) != 0){
