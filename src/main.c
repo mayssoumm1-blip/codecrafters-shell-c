@@ -50,6 +50,14 @@ int main() {
       }
     }
 
+    // --CD BUILTIN--
+    else if(strcmp(args[0], "cd") == 0){
+      if (i<2) continue;
+      if (chdir(args[1]) != 0){
+        printf("cd: %s: No such file or directory\n", args[1]);
+      }
+    }
+
     // --TYPE--
     else if (strcmp(args[0], "type") == 0) {                       
       if (i < 2) continue;                                                  
