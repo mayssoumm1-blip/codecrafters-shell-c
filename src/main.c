@@ -29,13 +29,35 @@ int main() {
 
     if (args[0] == NULL) continue; // Handle empty input
 
-    // 2. Handle Builtins
+    // 2. Handle Builtin commands
+    // --EXIT--
     if (strcmp(args[0], "exit") == 0) return 0;
 
+    // --ECHO--
+    else if (strcmp(args[0], "echo") == 0) {
+      for (int j = 1; j < i; j++) printf("%s%s", args[j], (j == i - 1) ? "" : " ");
+      printf("\n");
+    } 
+
+    // --PWD--
+    else if(strcmp(args[0], "pwd") == 0){
+      char cwd[1024];
+      if (getcwd(cwd, sizeof(cwd)) != NULL){
+        printf("%s\n", cwd);
+      }
+      else{
+        perror("pwd error");
+      }
+    }
+
+    // --TYPE--
     else if (strcmp(args[0], "type") == 0) {                       
       if (i < 2) continue;                                                  
       // Check if it's a builtin                                   
-      if (strcmp(args[1], "exit") == 0 || strcmp(args[1], "echo") == 0 ||strcmp(args[1], "type") == 0) {                          
+      if (strcmp(args[1], "exit") == 0 || 
+          strcmp(args[1], "echo") == 0 ||
+          strcmp(args[1], "type") == 0||
+          strcmp(args[1], "pwd") == 0) {                          
         printf("%s is a shell builtin\n", args[1]);                
       } else {                                                     
         // Check if it's an external command 
@@ -48,11 +70,6 @@ int main() {
         }                                                          
       }                                                            
     }    
-        
-    else if (strcmp(args[0], "echo") == 0) {
-      for (int j = 1; j < i; j++) printf("%s%s", args[j], (j == i - 1) ? "" : " ");
-      printf("\n");
-    } 
         
     // 3. Handle External Programs
     else {
