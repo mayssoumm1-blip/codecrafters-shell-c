@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <ctype.h>
 
 // Helper to find the full path of a command
 char* get_command_path(const char *command_name);
@@ -20,7 +21,7 @@ int main() {
     char *args[128];
     int arg_count = 0;
 
-    int n = strle(input);
+    int n = strlen(input);
     for(int i = 0; i<n; i++){
       while(i<n && isspace(input[i])) i++;
       if (i >= n) break;
