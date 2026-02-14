@@ -91,7 +91,7 @@ int main() {
       } else {                                                     
         // Check if it's an external command 
         char *path = get_command_path(t); 
-        if (path) { printf("%ss is %s\n", t, path); free(path);}  
+        if (path) { printf("%s is %s\n", t, path); free(path);}  
         else printf("%s: not found \n", t);                                                       
       }                                                            
     }    
@@ -100,20 +100,20 @@ int main() {
     else {
       char *full_path = get_command_path(args[0]);
       if (full_path) {
-        if (full_path) {
-          if(fork() == 0){
-            execv(full_path, args);
-            exit(1);
-          }else{
-            wait(NULL);
-            free(full_path);
-          }
-        } else {
-          printf("%s: command not found\n", args[0]);
+        if(fork() == 0){
+          execv(full_path, args);
+          exit(1);
+        }else{
+          wait(NULL);
+          free(full_path);
         }
-      }
-      // Clean up memory for arguments
-      for (int j = 0; j < arg_count; j++) free(args[j]);
+      } else {
+        printf("%s: command not found\n", args[0]);
+      }   
+    }
+    // Clean up memory for arguments
+    for (int j = 0; j < arg_count; j++) {
+      free(args[j]);
     }
   }
   return 0;
