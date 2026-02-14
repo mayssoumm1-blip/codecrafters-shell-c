@@ -24,7 +24,7 @@ int main() {
 
     for(int i = 0; i<n; i++){
       // 1. Skip spaces between arguments
-      while( i < n && input[i] == ' ')) i++;
+      while( i < n && input[i] == ' ') i++;
       if (i >= n) break;
 
       // 2. Start a new argument
