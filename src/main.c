@@ -20,12 +20,14 @@ int main() {
 
     char *args[128];
     int arg_count = 0;
-
     int n = strlen(input);
+
     for(int i = 0; i<n; i++){
-      while(i<n && isspace(input[i])) i++;
+      // 1. Skip spaces between arguments
+      while( i < n && input[i] == ' ')) i++;
       if (i >= n) break;
 
+      // 2. Start a new argument
       char *arg = malloc(1024);
       int k = 0;
       int in_single_quotes = 0;
@@ -33,7 +35,7 @@ int main() {
       while (i<n){
         if (input[i] == '\''){
           in_single_quotes = !in_single_quotes; // Toggle state
-        } else if (!in_single_quotes && isspace(input[i])){
+        } else if (!in_single_quotes && input[i] == ' '){
           break;  // Ende of argument
         } else {
           arg[k++] = input[i];  // Literal character
@@ -41,7 +43,7 @@ int main() {
         i++;
       }
       arg[k] = '\0';
-      args[arg_count] = arg;
+      args[arg_count++] = arg;
     }
     args[arg_count] = NULL;
    
@@ -54,7 +56,7 @@ int main() {
 
     // --ECHO--
     else if (strcmp(args[0], "echo") == 0) {
-      for (int j = 1; j < arg_count; j++) printf("%s%s", args[j], (j == arg_count - 1) ? "" : " ");
+      for (int j = 1; j < arg_count; j++){printf("%s%s", args[j], (j == arg_count - 1) ? "" : " ");}
       printf("\n");
     } 
 
