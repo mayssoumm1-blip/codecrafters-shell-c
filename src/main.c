@@ -119,7 +119,7 @@ int handle_builtins(int arg_count, char **args){
 
     // --TYPE--
   if (strcmp(cmd, "type") == 0) {                       
-    if (arg_count < 2) continue;                                                  
+    if (arg_count < 2) return 1;                                                  
     char *t = args[1];                                  
     if (strcmp(t, "exit") == 0 || strcmp(t, "echo") == 0 || strcmp(t, "type") == 0 || strcmp(t, "pwd") == 0 || strcmp(t, "cd") == 0) {                          
         printf("%s is a shell builtin\n", t);                
