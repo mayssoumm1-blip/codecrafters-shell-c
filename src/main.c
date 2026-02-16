@@ -5,119 +5,156 @@
 #include <unistd.h>
 #include <ctype.h>
 
-// Helper to find the full path of a command
+int parse_input(char *input, char **args);
+int handle_builtins(int arg_count, char **args);
+void execute_external(int arg_count, char **args);
 char* get_command_path(const char *command_name);
+
 
 
 int main() {
   setbuf(stdout, NULL);
   char input[1024];
+  char *args[128]; 
 
   while (1) {
     printf("$ ");
     if (fgets(input, sizeof(input), stdin) == NULL) break;
     input[strcspn(input, "\n")] = '\0';
 
-    char *args[128];
-    int arg_count = 0;
-    int n = strlen(input);
-
-    for(int i = 0; i<n; i++){
-      // 1. Skip spaces between arguments
-      while( i < n && input[i] == ' ') i++;
-      if (i >= n) break;
-
-      // 2. Start a new argument
-      char *arg = malloc(1024);
-      int k = 0;
-      int in_single_quotes = 0;
-
-      while (i<n){
-        if (input[i] == '\''){
-          in_single_quotes = !in_single_quotes; // Toggle state
-        } else if (!in_single_quotes && input[i] == ' '){
-          break;  // Ende of argument
-        } else {
-          arg[k++] = input[i];  // Literal character
-        }
-        i++;
-      }
-      arg[k] = '\0';
-      args[arg_count++] = arg;
-    }
-    args[arg_count] = NULL;
-   
+     // 1. PARSE 
+    int arg_count = parse_input(input, args);
     if (arg_count == 0) continue; // Handle empty input
 
-    // -- BUILTINS --
-
-    // --EXIT--
-    if (strcmp(args[0], "exit") == 0) return 0;
-
-    // --ECHO--
-    else if (strcmp(args[0], "echo") == 0) {
-      for (int j = 1; j < arg_count; j++){printf("%s%s", args[j], (j == arg_count - 1) ? "" : " ");}
-      printf("\n");
-    } 
-
-    // --PWD--
-    else if(strcmp(args[0], "pwd") == 0){
-      char cwd[1024];
-      if (getcwd(cwd, sizeof(cwd)) != NULL){
-        printf("%s\n", cwd);
-      }
-      else{
-        perror("pwd error");
-      }
+     // 2. BUILTINS
+    if (handle_builtins(arg_count, args)){
+      // Builtin ran successfully, cleanup and continue
     }
-
-    // --CD BUILTIN--
-    else if(strcmp(args[0], "cd") == 0){
-      char *path = (arg_count > 1) ? args[1] : NULL;
-        if (path && strcmp(path, "~") == 0) path = getenv("HOME");
-        if (path && chdir(path) != 0) printf("cd: %s: No such file or directory\n", args[1]);
-    }
-
-    // --TYPE--
-    else if (strcmp(args[0], "type") == 0) {                       
-      if (arg_count < 2) continue;                                                  
-      char *t = args[1];                                  
-      if (strcmp(t, "exit") == 0 || 
-          strcmp(t, "echo") == 0 ||
-          strcmp(t, "type") == 0 ||
-          strcmp(t, "pwd") == 0 ||
-          strcmp(t, "cd") == 0) {                          
-        printf("%s is a shell builtin\n", t);                
-      } else {                                                     
-        // Check if it's an external command 
-        char *path = get_command_path(t); 
-        if (path) { printf("%s is %s\n", t, path); free(path);}  
-        else printf("%s: not found \n", t);                                                       
-      }                                                            
-    }    
         
-    // -- EXTERNAL PROGRAMS --
-    else {
-      char *full_path = get_command_path(args[0]);
-      if (full_path) {
-        if(fork() == 0){
-          execv(full_path, args);
-          exit(1);
-        }else{
-          wait(NULL);
-          free(full_path);
-        }
-      } else {
-        printf("%s: command not found\n", args[0]);
-      }   
+     //  3. EXECUTE EXTERNAL
+    else{
+      execute_external(arg_count, args);
     }
-    // Clean up memory for arguments
-    for (int j = 0; j < arg_count; j++) {
-      free(args[j]);
-    }
+    
+    // Clean up memory for this command
+    for (int j = 0; j < arg_count; j++) free(args[j]);
   }
   return 0;
 }
+
+
+
+
+
+int parse_input(char *input, char **args){
+  int arg_count = 0;
+  int n = strlen(input);
+  int i = 0;
+
+  while ( i < n ){
+    // 1. Skip spaces between arguments
+    while( i < n && input[i] == ' ') i++;
+    if (i >= n) break;
+
+    // 2. Start a new argument
+    char *arg = malloc(1024);
+    int k = 0;
+    int in_single_quotes = 0;
+    int in_double_quotes = 0;
+
+    while ( i < n ){
+      if (input[i] == '\'' && !in_double_quotes){
+        in_single_quotes = !in_single_quotes; // Toggle state
+      } 
+      else if (!in_single_quotes && input[i] == '"'){
+        in_double_quotes = !in_double_quotes;
+      }
+      else if ( input[i] == ' ' && !in_single_quotes && !in_double_quotes){
+        break; // End of argument
+      }
+      else {
+        arg[k++] = input[i]; 
+      }
+      i++;
+    }
+    arg[k] = '\0';
+    args[arg_count++] = arg;
+  }
+  args[arg_count] = NULL;
+  return arg_count;
+}
+
+
+//  Returns 1 if a builtin was executed, 0 otherwise
+int handle_builtins(int arg_count, char **args){
+  char *cmd = args[0];
+    // --EXIT--
+  if (strcmp(cmd, "exit") == 0){
+    for (int j = 0; j < arg_count ; j++) free(args[j]);
+    exit(0);
+  }
+
+    // --ECHO--
+  if (strcmp(cmd, "echo") == 0) {
+    for (int j = 1; j < arg_count; j++){printf("%s%s", args[j], (j == arg_count - 1) ? "" : " ");}
+    printf("\n");
+    return 1;
+  } 
+
+    // --PWD--
+  if (strcmp(cmd, "pwd") == 0){
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) printf("%s\n", cwd);
+    else perror("pwd error");
+    return 1;
+  }
+
+    // --CD BUILTIN--
+  if (strcmp(cmd, "cd") == 0){
+    char *path = (arg_count > 1) ? args[1] : NULL;
+    if (path && strcmp(path, "~") == 0) path = getenv("HOME");
+    if (path && chdir(path) != 0) printf("cd: %s: No such file or directory\n", args[1]);
+    return 1;
+  }
+
+    // --TYPE--
+  if (strcmp(cmd, "type") == 0) {                       
+    if (arg_count < 2) continue;                                                  
+    char *t = args[1];                                  
+    if (strcmp(t, "exit") == 0 || strcmp(t, "echo") == 0 || strcmp(t, "type") == 0 || strcmp(t, "pwd") == 0 || strcmp(t, "cd") == 0) {                          
+        printf("%s is a shell builtin\n", t);                
+    } else {                                                     
+      // Check if it's an external command 
+      char *path = get_command_path(t); 
+      if (path) { printf("%s is %s\n", t, path); free(path);}  
+      else printf("%s: not found \n", t);                                                       
+    }
+    return 1;                                                            
+  }    
+  return 0; // not a builtin
+}
+
+
+void execute_external(int arg_count, char **args){
+  char *cmd = args[0];
+  char *full_path = get_command_path(cmd);
+
+  if (full_path) {
+    pid_t pid = fork();
+    if(pid == 0){
+      // Child
+      execv(full_path, args);
+      exit(1);
+    }else{
+      // Parent
+      wait(NULL);
+      free(full_path);
+    }
+  } else {
+    printf("%s: command not found\n", cmd);
+  } 
+}
+
 
 char* get_command_path(const char *command_name){
   char *path_env = getenv("PATH");
