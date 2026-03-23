@@ -44,8 +44,6 @@ int main() {
 
 
 
-
-
 int parse_input(char *input, char **args){
   int arg_count = 0;
   int n = strlen(input);
@@ -59,23 +57,36 @@ int parse_input(char *input, char **args){
     // 2. Start a new argument
     char *arg = malloc(1024);
     int k = 0;
-    int in_single_quotes = 0;
-    int in_double_quotes = 0;
+    int in_single_q = 0;
+    int in_double_q = 0;
 
     while ( i < n ){
-      if (input[i] == '\\' && !in_single_quotes && !in_double_quotes){
-        i++; // Skip the backslash
-        if (i < n){
-          arg[k++] = input[i]; // Take the next character
+
+      if (input[i] == '\\'){
+        if (in_single_q){
+          arg[k++] = input[i];
+        }
+        else if (in_double_q){
+          char next = input[i + 1];
+          if (next == '"' || next == '\\' || next == '$' || next == '\n'){
+            i++;
+            arg[k++] = input[i];
+          }else{
+            arg[k++] = input[i];
+          }
+        }
+        else{
+          i++;
+          if (i<n) arg[k++] = input[i];
         }
       }
-      else if (input[i] == '\'' && !in_double_quotes){
-        in_single_quotes = !in_single_quotes; // Toggle state
+      else if (input[i] == '\'' && !in_double_q){
+        in_single_q = !in_single_q; // Toggle state
       } 
-      else if (input[i] == '"' && !in_single_quotes){
-        in_double_quotes = !in_double_quotes;
+      else if (input[i] == '"' && !in_single_q){
+        in_double_q = !in_double_q;
       }
-      else if ( input[i] == ' ' && !in_single_quotes && !in_double_quotes){
+      else if ( input[i] == ' ' && !in_single_q && !in_double_q){
         break; // End of argument
       }
       else {
