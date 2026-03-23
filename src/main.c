@@ -63,10 +63,16 @@ int parse_input(char *input, char **args){
     int in_double_quotes = 0;
 
     while ( i < n ){
-      if (input[i] == '\'' && !in_double_quotes){
+      if (input[i] == '\\' && !in_single_quotes && !in_double_quotes){
+        i++; // Skip the backslash
+        if (i < n){
+          arg[k++] = input[i]; // Take the next character
+        }
+      }
+      else if (input[i] == '\'' && !in_double_quotes){
         in_single_quotes = !in_single_quotes; // Toggle state
       } 
-      else if (!in_single_quotes && input[i] == '"'){
+      else if (input[i] == '"' && !in_single_quotes){
         in_double_quotes = !in_double_quotes;
       }
       else if ( input[i] == ' ' && !in_single_quotes && !in_double_quotes){
